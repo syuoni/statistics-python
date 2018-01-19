@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 from scipy import stats
@@ -56,8 +57,8 @@ class OrdinaryLeastSquare(BaseModel):
         y_mean = np.mean(y)
         SST = np.sum((y - y_mean)**2)
         SSE = np.sum((y_hat - y_mean)**2)
-        SSR = np.sum(e_hat**2)        
-        R_sqr = 1 - SSR / SST        
+        SSR = np.sum(e_hat**2)
+        R_sqr = 1 - SSR / SST
         adj_R_sqr = 1 - (SSR/(n-K)) / (SST/(n-1))
         
         self.coef = b_hat
