@@ -7,7 +7,7 @@ from scipy import stats
 from matplotlib import pyplot as plt
 
 from statspy.base import BaseModel
-from statspy.ols import OrdinaryLeastSquare, TwoStepLeastSquare
+from statspy.ols import OrdinaryLeastSquare, TwoStepLeastSquare, WithinEstimation
 from statspy.tools import gen_hessian_with_func, clean4reg, show_model_res, format_res_table, desc_stats
 from statspy.mle import MaximumLikelihoodEstimation, ProbitModel, LogitModel, LinearModel, TobitModel
 from statspy.nonparam import KernelDensity, KernelFunction, LocalPolyRegression, RobinsonRegression
@@ -49,8 +49,8 @@ class Test2SLS(unittest.TestCase):
         self.assertTrue(np.allclose(tsls_md.step1.res_table['coef'].values[:6], 
                                     np.array([0.334796190, 0.370970577, -0.901282787, -0.637618780, 2.92112398, 0.0130364895])))
         
-if __name__ == '__main__':
-    unittest.main(verbosity=2)
+#if __name__ == '__main__':
+#    unittest.main(verbosity=2)
 
 
 
@@ -185,4 +185,11 @@ if __name__ == '__main__':
 #wb_md = WeibullModel(df, y_var='durat', x_vars=['workprg', 'priors', 'tserved', 'felon', 'alcohol',
 #                                                'drugs', 'black', 'married', 'educ', 'age'], d_var='d')
 #wb_md.fit()
+
+
+df = pd.read_stata(r'example-data\womenwk.dta')
+md = WithinEstimation(df, 'work', ['age', 'married', 'children', 'education'], 'county')
+md.fit(robust=True, show_res=True)
+
+
 
