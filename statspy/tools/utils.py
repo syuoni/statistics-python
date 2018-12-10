@@ -1,9 +1,6 @@
 import numpy as np
 import pandas as pd
 
-def clean4reg(df, clean_vars=None, exempt=None, add_const=True):
-    pass
-
 def show_model_res(model):
     print('=' * 70)
     if hasattr(model, 'res_stats'):

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 
@@ -10,13 +11,14 @@ class LinearModel(MaximumLikelihoodEstimation):
         super(LinearModel, self).__init__(df, y_var, x_vars, has_const=has_const)
         self.hess = None
         self._init()
+        self._clean_data()
     
     def neg_loglikelihood(self, params):
         beta, logsigma = params[:-1], params[-1]
         sigma = np.exp(logsigma)
         
-        y = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
+        y = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
         
         Xb = X.dot(beta)
         e_hat = y - Xb
@@ -28,29 +30,29 @@ class LinearModel(MaximumLikelihoodEstimation):
         beta, logsigma = params[:-1], params[-1]
         sigma = np.exp(logsigma)
         
-        y = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
+        y = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
         
         Xb = X.dot(beta)
         e_hat = y - Xb
         
-        beta_gr = np.sum(e_hat.values.reshape((-1, 1))*X, axis=0) / sigma**2
+        beta_gr = np.sum(e_hat.reshape((-1, 1))*X, axis=0) / sigma**2
         logsigma_gr = np.sum(e_hat**2/sigma**2 - 1)
         return -np.append(beta_gr, logsigma_gr)
     
     def predict(self, df):
         assert self._fitted
         if self.has_const:
-            df['_const'] = 1
-        X = df[self.x_vars]
-        return X.dot(self.res_table['coef'][:-1])
+            X = df.assign(_const=1)[self.x_vars]
+        else:
+            X = df[self.x_vars]
+        return X.values.dot(self.res_table['Coef'].values[:-1])
         
     def fit(self, show_res=True, **kwargs):
-        self._clean_data()
-        
-        params0 = np.ones(len(self.x_vars)+1)
+        params0 = np.ones(len(self.x_vars) + 1)
         params0 = pd.Series(params0, index=np.append(self.x_vars, 'logsigma'))
         self._optimize(params0, **kwargs)
         self._fitted = True   
-        if show_res: show_model_res(self)
+        if show_res:
+            show_model_res(self)
         
