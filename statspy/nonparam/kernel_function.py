@@ -36,11 +36,8 @@ class KernelFunction(object):
         return np.where(np.abs(z)<=1, 3 * np.exp(-(3*z)**2/2) / (2*np.pi) ** 0.5, 0)
         
 if __name__ == '__main__':
-    kf = KernelFunction.quadratic
-#    kf = KernelFunction.clust_gaussian
-    
-    print(integrate.quad(kf, -3, 3))
+    print(integrate.quad(KernelFunction.clust_gaussian, -3, 3))
     
     x_seq = np.linspace(-2, 2, 201)
-    plt.plot(x_seq, kf(x_seq))
+    plt.plot(x_seq, KernelFunction.clust_gaussian(x_seq))
     plt.show()
