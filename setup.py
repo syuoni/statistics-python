@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 from setuptools import setup
 
 setup(name             = 'statspy',
-      version          = '0.01',
+      version          = '0.02',
       description      = 'Statistic methods with Python',
       long_description = open('README.rst').read(),
       url              = 'https://github.com/syuoni/statspy',
