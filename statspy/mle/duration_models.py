@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 
@@ -14,6 +15,7 @@ class ExponentialModel(MaximumLikelihoodEstimation):
         self.d_var = d_var
         self.hess = None
         self._init()
+        self._clean_data()
         
     def _clean_data(self):
         reg_vars = [self.y_var] + self.x_vars + [self.d_var]
@@ -24,9 +26,9 @@ class ExponentialModel(MaximumLikelihoodEstimation):
     
     def neg_loglikelihood(self, params):
         beta = params        
-        t = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
-        d = self.reg_df[self.d_var]
+        t = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
+        d = self.reg_df[self.d_var].values
         
         Xb = X.dot(beta)
         
@@ -35,9 +37,9 @@ class ExponentialModel(MaximumLikelihoodEstimation):
         
     def jac(self, params):
         beta = params        
-        t = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
-        d = self.reg_df[self.d_var]
+        t = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
+        d = self.reg_df[self.d_var].values
         
         Xb = X.dot(beta)
         gr = np.sum((d-np.exp(Xb)*t)[:, None] * X, axis=0)
@@ -46,20 +48,19 @@ class ExponentialModel(MaximumLikelihoodEstimation):
     def linear_predict(self, df):
         assert self._fitted
         if self.has_const:
-            df['_const'] = 1
-        X = df[self.x_vars]
-        return X.dot(self.res_table['coef'])
+            X = df.assign(_const=1)[self.x_vars]
+        else:
+            X = df[self.x_vars]
+        return X.values.dot(self.res_table['Coef'].values)
         
     def predict(self, df):
         linear_predict = self.linear_predict(df)
         return np.exp(linear_predict)
         
     def fit(self, show_res=True, **kwargs):
-        self._clean_data()
-        
-        params0 = np.ones(len(self.x_vars))
+        params0 = np.ones(len(self.x_vars)) * 1e-5
         params0 = pd.Series(params0, index=self.x_vars)
-        self._optimize(params0, **kwargs)
+        self._optimize(params0, params0_limit=1e-5, **kwargs)
         self._fitted = True   
         if show_res: show_model_res(self)
 
@@ -76,6 +77,7 @@ class WeibullModel(MaximumLikelihoodEstimation):
         self.jac = None
         self.hess = None
         self._init()
+        self._clean_data()
         
     def _clean_data(self):
         reg_vars = [self.y_var] + self.x_vars + [self.d_var]
@@ -86,9 +88,9 @@ class WeibullModel(MaximumLikelihoodEstimation):
     
     def neg_loglikelihood(self, params):
         beta, lnp = params[:-1], params[-1]
-        t = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
-        d = self.reg_df[self.d_var]
+        t = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
+        d = self.reg_df[self.d_var].values
         
         p = np.exp(lnp)
         Xb = X.dot(beta)
@@ -99,9 +101,9 @@ class WeibullModel(MaximumLikelihoodEstimation):
         
     def jac(self, params):
         beta, lnp = params[:-1], params[-1]
-        t = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
-        d = self.reg_df[self.d_var]
+        t = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
+        d = self.reg_df[self.d_var].values
         
         p = np.exp(lnp)
         Xb = X.dot(beta)
@@ -122,11 +124,9 @@ class WeibullModel(MaximumLikelihoodEstimation):
 #        return np.exp(linear_predict)
         
     def fit(self, show_res=True, **kwargs):
-        self._clean_data()
-        
-        params0 = np.ones(len(self.x_vars)+1) / 1e5
+        params0 = np.ones(len(self.x_vars) + 1) * 1e-5
         params0 = pd.Series(params0, index=np.append(self.x_vars, 'lnp'))
-        self._optimize(params0, **kwargs)
+        self._optimize(params0, params0_limit=1e-5, **kwargs)
         self._fitted = True   
         if show_res: show_model_res(self)
 

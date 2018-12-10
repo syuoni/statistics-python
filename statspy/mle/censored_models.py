@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
@@ -13,22 +14,23 @@ class TobitModel(MaximumLikelihoodEstimation):
         self.jac = None
         self.hess = None        
         self._init()
+        self._clean_data()
         
-        # cencored variable: left  cencored is 0,
-        #                    not   cencored is 1,
-        #                    right cencored is 2.
-        self.df['_c'] = 1
+        # Cencored variable: Left  cencored is 0,
+        #                    Not   cencored is 1,
+        #                    Right cencored is 2.
+        self.reg_df['_c'] = 1
         if lower is not None:
-            self.df['_c'] = np.where(self.df[y_var] <= lower, 0, self.df['_c'])
+            self.reg_df.loc[self.reg_df[y_var] <= lower, '_c'] = 0
         if upper is not None:
-            self.df['_c'] = np.where(self.df[y_var] >= upper, 2, self.df['_c'])
+            self.reg_df.loc[self.reg_df[y_var] >= upper, '_c'] = 2
     
     def neg_loglikelihood(self, params):
         beta, logsigma = params[:-1], params[-1]
         sigma = np.exp(logsigma)
         
-        y = self.reg_df[self.y_var]
-        X = self.reg_df[self.x_vars]
+        y = self.reg_df[self.y_var].values
+        X = self.reg_df[self.x_vars].values
         
         Xb = X.dot(beta)
         e_hat = y - Xb
@@ -58,13 +60,12 @@ class TobitModel(MaximumLikelihoodEstimation):
     def predict(self, df):
         assert self._fitted
         if self.has_const:
-            df['_const'] = 1
-        X = df[self.x_vars]
-        return X.dot(self.res_table['coef'][:-1])
+            X = df.assign(_const=1)[self.x_vars]
+        else:
+            X = df[self.x_vars]
+        return X.values.dot(self.res_table['Coef'].values[:-1])
 
     def fit(self, show_res=True, **kwargs):
-        self._clean_data()
-        
         params0 = np.ones(len(self.x_vars)+1)
         params0 = pd.Series(params0, index=np.append(self.x_vars, 'logsigma'))
         self._optimize(params0, **kwargs)
