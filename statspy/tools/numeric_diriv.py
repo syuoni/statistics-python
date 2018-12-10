@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 
 double_eps = 2.2e-16
@@ -11,6 +12,7 @@ def get_1st_multip(func, params, ei, h, *args):
         return np.inf
     abs_func = np.max(np.abs(np.array([fv0, fv1, (fv0+fv1)/2])))
     return abs_func * double_eps**0.5 / abs_d_func
+
 
 def get_1st_diff(func, params, ei, h='optim', *args):
     # optimize h, to make the func(x+h)-func(x) is half digits of func(x)
@@ -41,6 +43,7 @@ def get_1st_diff(func, params, ei, h='optim', *args):
     d_func = fv1 - fv0        
     return d_func / h
 
+
 def get_2ed_multip(func, params, ei, ej, h, *args):
     d_params_i = 0.5 * h * ei
     d_params_j = 0.5 * h * ej
@@ -54,9 +57,9 @@ def get_2ed_multip(func, params, ei, ej, h, *args):
     abs_func = np.max(np.abs(np.array([fv00, fv01, fv10, fv11, (fv00+fv01+fv10+fv11)/4])))
     return abs_func * double_eps**0.5 / abs_d2_func
 
-    
+
 def get_2ed_diff(func, params, ei, ej, h='optim', *args):
-    # optimize h, to make the func(x+h)-func(x) is half digits of func(x)
+    # Optimize h, to make the func(x+h)-func(x) is half digits of func(x)
     if h == 'optim':
         h = double_eps ** 0.5
         multip = get_2ed_multip(func, params, ei, ej, h, *args)
@@ -87,6 +90,7 @@ def get_2ed_diff(func, params, ei, ej, h='optim', *args):
     d2_func = fv00 - fv01 - fv10 + fv11        
     return d2_func / h**2
 
+
 def gen_jacobian(func, h='optim'):
     def jacobian(params, *args):
         n_params = len(params)
@@ -95,6 +99,7 @@ def gen_jacobian(func, h='optim'):
             jacobian_vec[i] = get_1st_diff(func, params, ei, h, *args)
         return jacobian_vec 
     return jacobian
+
 
 def gen_hessian_with_func(func, h='optim'):
     def hessian(params, *args):        
@@ -109,35 +114,10 @@ def gen_hessian_with_func(func, h='optim'):
         return hessian_matrix        
     return hessian
 
+
 def gen_hessian_with_jac(func, h='optim'):
     pass
 
 
-if __name__ == '__main__':
-    def func(x, y=2):
-        return x[0] * y + x[1] ** 3 + np.exp(x[1]) + x[0]*x[1]**2
-    
-    def jac(x, y=2):
-        return np.array([y+x[1]**2, 3*x[1]**2+np.exp(x[1])+2*x[0]*x[1]])
-        
-    def hess(x, y=2):
-        return np.array([[0,      2*x[1]],
-                         [2*x[1], 6*x[1]+np.exp(x[1])+2*x[0]]])
-    
-    
-    print(jac(np.arange(1, 3), 3))
-    n_jac = gen_jacobian(func)
-    print(n_jac(np.arange(1, 3), 3))
-    n_jac = gen_jacobian(func, h='nash')
-    print(n_jac(np.arange(1, 3), 3))
-    
-    print(hess(np.arange(1, 3), 3))
-    n_hess = gen_hessian_with_func(func)
-    print(n_hess(np.arange(1, 3), 3))
-    n_hess = gen_hessian_with_func(func, h='nash')
-    print(n_hess(np.arange(1, 3), 3))
 
-    
-    
-    
-    
+
