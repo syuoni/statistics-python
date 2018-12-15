@@ -62,7 +62,7 @@ class WeightedLeastSquare(BaseModel):
                                                    ('CI.lower', CI_lower),
                                                    ('CI.upper', CI_upper)]), index=self.x_vars)
 
-        self.res_stats = pd.Series(OrderedDict([('method', 'OLS'),
+        self.res_stats = pd.Series(OrderedDict([('method', 'WLS'),
                                                 ('obs', n),
                                                 ('RMSE', s),
                                                 ('SSE', SSE),

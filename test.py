@@ -99,8 +99,56 @@ class TestOLS(unittest.TestCase):
                                     atol=1e-2))
         self.assertTrue(np.allclose(ols_md.predict(df)[:5],
                                     np.array([0.3154147, 0.4589877, 0.376946, 0.4692429, 0.6050618])))
+
+
+class TestWLS(unittest.TestCase):
+    def test_wls_result(self):
+        rng = np.random.RandomState(123)
+        n_sample = 10000
+        h_sample = n_sample//2
         
+        df = pd.DataFrame(rng.randn(n_sample, 2), columns=['x', 'y'])
+        df['z'] = df[['x', 'y']].dot([1, 1]) + 1
+        df.loc[h_sample:, 'z'] = df.loc[h_sample:, ['x', 'y']].dot([2, 1]) + 2
+        df['wt0'] = 1
+        df['wt1'] = 1
+        df.loc[h_sample:, 'wt1'] = 9
         
+        # Regression on the constant
+        ols = OrdinaryLeastSquare(df, 'z', [])
+        ols.fit(show_res=False)
+        self.assertAlmostEqual(ols.res_table.loc['_const', 'Coef'], df['z'].mean())
+        
+        wls0 = WeightedLeastSquare(df, 'z', [], wt_var='wt0')
+        wls0.fit(show_res=False)
+        self.assertEqual(wls0.res_stats['method'], 'WLS')
+        self.assertAlmostEqual(wls0.res_table.loc['_const', 'Coef'], df['z'].mean())
+        
+        wls1 = WeightedLeastSquare(df, 'z', [], wt_var='wt1')
+        wls1.fit(show_res=False)
+        self.assertAlmostEqual(wls1.res_table.loc['_const', 'Coef'], df['z'].values.dot(df['wt1'].values) / df['wt1'].sum())
+        
+        # Regression on a variable
+        ols0 = OrdinaryLeastSquare(df, 'z', ['x'])
+        ols0.fit(show_res=False)
+        
+        wls0 = WeightedLeastSquare(df, 'z', ['x'], wt_var='wt0')
+        wls0.fit(show_res=False)
+        self.assertAlmostEqual(wls0.res_table.loc['x', 'Coef'], ols0.res_table.loc['x', 'Coef'])
+        self.assertAlmostEqual(wls0.res_table.loc['x', 'Coef'], 1.5, delta=0.1)
+        
+        # Simulate weight with frequency
+        ext_df = pd.concat([df.loc[h_sample:] for _ in range(8)], axis=0, ignore_index=True)
+        ext_df = pd.concat([df, ext_df], axis=0, ignore_index=True)
+        ols1 = OrdinaryLeastSquare(ext_df, 'z', ['x'])
+        ols1.fit(show_res=False)
+        
+        wls1 = WeightedLeastSquare(df, 'z', ['x'], wt_var='wt1')
+        wls1.fit(show_res=False)
+        self.assertAlmostEqual(wls1.res_table.loc['x', 'Coef'], ols1.res_table.loc['x', 'Coef'])
+        self.assertAlmostEqual(wls1.res_table.loc['x', 'Coef'], 1.9, delta=0.1)
+
+
 class TestWithinEst(unittest.TestCase):
     def test_we_result(self):
         df = pd.read_stata('example-data/womenwk.dta')
@@ -303,6 +351,7 @@ class TestRobinson(unittest.TestCase):
         rb = RobinsonRegression(df, 'lntc', ['lnpf'], ['lnq', 'lnpl', 'lnpk'])
         rb.fit(robust=True, kernel=KernelFunction.gaussian, degree=1, h=[0.0825], 
                local_ratio=None, robust_wt_updates=0, show_res=False)
+        self.assertEqual(rb.res_stats['method'], 'Robinson')
         self.assertTrue(np.allclose(rb.step2.res_table['Coef'].values, 
                                     np.array([0.7237013, 0.3398899, -0.3549753]), 
                                     atol=1e-2))
@@ -392,53 +441,6 @@ class TestRobinson(unittest.TestCase):
         ax.plot(plot_df['y'].values, y_hat_wt1, 'g-', label='hat_wt1')
         ax.legend(loc='upper left')
         plt.show()
-        
-        
-class TestWLS(unittest.TestCase):
-    def test_wls_result(self):
-        rng = np.random.RandomState(123)
-        n_sample = 10000
-        h_sample = n_sample//2
-        
-        df = pd.DataFrame(rng.randn(n_sample, 2), columns=['x', 'y'])
-        df['z'] = df[['x', 'y']].dot([1, 1]) + 1
-        df.loc[h_sample:, 'z'] = df.loc[h_sample:, ['x', 'y']].dot([2, 1]) + 2
-        df['wt0'] = 1
-        df['wt1'] = 1
-        df.loc[h_sample:, 'wt1'] = 9
-        
-        # Regression on the constant
-        ols = OrdinaryLeastSquare(df, 'z', [])
-        ols.fit(show_res=False)
-        self.assertAlmostEqual(ols.res_table.loc['_const', 'Coef'], df['z'].mean())
-        
-        wls0 = WeightedLeastSquare(df, 'z', [], wt_var='wt0')
-        wls0.fit(show_res=False)
-        self.assertAlmostEqual(wls0.res_table.loc['_const', 'Coef'], df['z'].mean())
-        
-        wls1 = WeightedLeastSquare(df, 'z', [], wt_var='wt1')
-        wls1.fit(show_res=False)
-        self.assertAlmostEqual(wls1.res_table.loc['_const', 'Coef'], df['z'].values.dot(df['wt1'].values) / df['wt1'].sum())
-        
-        # Regression on a variable
-        ols0 = OrdinaryLeastSquare(df, 'z', ['x'])
-        ols0.fit(show_res=False)
-        
-        wls0 = WeightedLeastSquare(df, 'z', ['x'], wt_var='wt0')
-        wls0.fit(show_res=False)
-        self.assertAlmostEqual(wls0.res_table.loc['x', 'Coef'], ols0.res_table.loc['x', 'Coef'])
-        self.assertAlmostEqual(wls0.res_table.loc['x', 'Coef'], 1.5, delta=0.1)
-        
-        # Simulate weight with frequency
-        ext_df = pd.concat([df.loc[h_sample:] for _ in range(8)], axis=0, ignore_index=True)
-        ext_df = pd.concat([df, ext_df], axis=0, ignore_index=True)
-        ols1 = OrdinaryLeastSquare(ext_df, 'z', ['x'])
-        ols1.fit(show_res=False)
-        
-        wls1 = WeightedLeastSquare(df, 'z', ['x'], wt_var='wt1')
-        wls1.fit(show_res=False)
-        self.assertAlmostEqual(wls1.res_table.loc['x', 'Coef'], ols1.res_table.loc['x', 'Coef'])
-        self.assertAlmostEqual(wls1.res_table.loc['x', 'Coef'], 1.9, delta=0.1)
         
         
 class TestMLE(unittest.TestCase):

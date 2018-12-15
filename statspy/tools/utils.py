@@ -10,7 +10,7 @@ def show_model_res(model):
         print(model.res_table)
         print('=' * 70)
 
-def format_res_table(res_table_list, in_parenth='t-statistic', digit=3, digit_in_parenth=2):
+def format_res_table(res_table_list, in_parenth='t', digit=3, digit_in_parenth=2):
     all_params = []
     for res_table in res_table_list:
         for param in res_table.index:
@@ -28,7 +28,7 @@ def format_res_table(res_table_list, in_parenth='t-statistic', digit=3, digit_in
     formatted['index'][0::2] = all_params
     
     for k, res_table in enumerate(res_table_list, 1):
-        coef_seq = np.array([('%%.%df%%s' % digit) % (c, sig_star(p)) for c, p in zip(res_table['coef'], res_table['p-value'])])
+        coef_seq = np.array([('%%.%df%%s' % digit) % (c, sig_star(p)) for c, p in zip(res_table['Coef'], res_table['p'])])
         parenth_seq = np.array([('(%%.%df)' % digit_in_parenth) % c for c in res_table[in_parenth]])
         formatted['(%d)' % k] = ''
         formatted.loc[res_table.index, '(%d)' % k] = coef_seq
