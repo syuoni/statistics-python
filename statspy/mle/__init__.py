@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from .mle import MaximumLikelihoodEstimation
 from .binary_models import ProbitModel, LogitModel
 from .censored_models import TobitModel
